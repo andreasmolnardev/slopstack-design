@@ -271,6 +271,16 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 		}
 		return event.JSON(http.StatusOK, rows)
 	}).Bind(apis.RequireAuth("users"))
+	e.Router.GET("/api/design/sessions/{id}", func(event *core.RequestEvent) error {
+		rows, err := designQueryMaps(event.App.DB().NewQuery("SELECT s.id,s.project,s.title,s.status,s.context,p.name AS project_name,p.repository_url FROM design_sessions s JOIN design_projects p ON p.id=s.project LEFT JOIN design_project_members m ON m.project=p.id WHERE s.id={:session} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"session": event.Request.PathValue("id"), "owner": event.Auth.Id}))
+		if err != nil {
+			return event.InternalServerError("could not load session", err)
+		}
+		if len(rows) == 0 {
+			return event.NotFoundError("session not found", nil)
+		}
+		return event.JSON(http.StatusOK, rows[0])
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.POST("/api/design/proposals/{id}/reviews", func(event *core.RequestEvent) error {
 		if event.Auth == nil || event.Auth.Collection().Name != "users" {
 			return event.UnauthorizedError("sign in required", nil)
