@@ -17,7 +17,7 @@ pnpm install
 pnpm dev
 ```
 
-The server listens on `:8090` by default; the web client runs on Vite's local port. PocketBase admin UI is available at `/ _/` (remove the space: `/_/`). Set `SLOPSTACK_DESIGN_DATA` to choose the persistent data directory and `SLOPSTACK_DESIGN_ADDR` to change the listen address.
+The server listens on `:8090` by default; the web client runs on Vite's local port. PocketBase admin UI is available at `/_/`. Set `SLOPSTACK_DESIGN_DATA` to choose the persistent data directory and `SLOPSTACK_DESIGN_ADDR` to change the listen address.
 
 ## Self-host
 

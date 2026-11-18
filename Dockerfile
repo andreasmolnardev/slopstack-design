@@ -9,16 +9,17 @@ RUN pnpm --filter @slopstack/design-web build
 
 FROM golang:1.26-alpine AS server-build
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod download
 COPY . .
-COPY --from=web-build /src/apps/web/dist ./apps/server/public
+COPY --from=web-build /src/apps/web/dist ./public
 RUN CGO_ENABLED=0 go build -o /out/slopstack-design ./apps/server
 
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=server-build /out/slopstack-design ./slopstack-design
+COPY --from=server-build /src/public ./public
 ENV SLOPSTACK_DESIGN_ADDR=:8090
 ENV SLOPSTACK_DESIGN_DATA=/data
 VOLUME ["/data"]
