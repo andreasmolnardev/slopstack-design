@@ -40,3 +40,5 @@ The web UI can be opened on a review session with `/?session={sessionId}`. It li
 ## Review principles
 
 See [the style guide](docs/STYLE_GUIDE.md) for reusable visual conventions and the anti-slop review checklist.
+
+The first integration flow is documented in the [Taskboard pilot guide](docs/TASKBOARD_PILOT.md), with its current token snapshot in `docs/templates/taskboard.json`.

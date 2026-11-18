@@ -1,0 +1,48 @@
+{
+  "name": "Taskboard",
+  "version": 1,
+  "source": "../slopstack/taskboard/apps/web/src/styles.css and components.json",
+  "observedAt": "2026-11-18",
+  "components": {
+    "system": "shadcn/ui conventions",
+    "style": "new-york",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "typography": {
+    "fontFamily": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+  },
+  "spacing": {
+    "recommendation": "Use the existing Tailwind spacing scale; confirm component-level usage in the target screen before proposing changes."
+  },
+  "colors": {
+    "light": {
+      "background": "#f7f7f5",
+      "foreground": "#262522",
+      "card": "#ffffff",
+      "muted": "#77746d",
+      "border": "#e7e5df",
+      "soft": "#f0efeb",
+      "primary": "#2f6f63",
+      "primaryDark": "#24594f",
+      "accent": "#e8f1ed",
+      "sidebar": "#ebece7"
+    },
+    "dark": {
+      "background": "#171717",
+      "foreground": "#eeeeee",
+      "card": "#202020",
+      "muted": "#a0a0a0",
+      "border": "#353535",
+      "soft": "#2a2a2a",
+      "primary": "#87c4a8",
+      "primaryDark": "#a7d8bc",
+      "accent": "#2b3731",
+      "sidebar": "#1d1d1d"
+    }
+  },
+  "notes": [
+    "These values were read from the repository and should be refreshed from source before a new design session.",
+    "The repository remains authoritative; this file is a review aid, not a replacement token source."
+  ]
+}
