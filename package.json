@@ -1,0 +1,13 @@
+{
+  "name": "slopstack-design",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c green,cyan \"pnpm dev:server\" \"pnpm dev:web\"",
+    "dev:server": "cd apps/server && go run . serve --http=0.0.0.0:8090",
+    "dev:web": "pnpm --filter @slopstack/design-web dev",
+    "build": "pnpm --filter @slopstack/design-web build && cd apps/server && go build -o slopstack-design ."
+  },
+  "devDependencies": { "concurrently": "^9.2.1" }
+}

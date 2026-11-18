@@ -1,9 +1,9 @@
 FROM node:22-alpine AS web-build
 WORKDIR /src
 RUN corepack enable
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 COPY apps/web apps/web
 RUN pnpm --filter @slopstack/design-web build
 
