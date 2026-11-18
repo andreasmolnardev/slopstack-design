@@ -18,7 +18,7 @@ func TestDesignIDsAreUnique(t *testing.T) {
 
 func TestDesignMCPToolContract(t *testing.T) {
 	tools := designMCPTools()
-	want := map[string]bool{"list_projects": false, "register_project": false, "create_design_session": false, "submit_proposal": false, "read_reviews": false}
+	want := map[string]bool{"list_projects": false, "register_project": false, "create_design_session": false, "read_design_context": false, "submit_proposal": false, "read_reviews": false}
 	for _, tool := range tools {
 		name, ok := tool["name"].(string)
 		if !ok {

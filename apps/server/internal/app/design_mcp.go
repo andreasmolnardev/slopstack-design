@@ -272,7 +272,8 @@ func designMCPTools() []map[string]any {
 	return []map[string]any{
 		{"name": "list_projects", "description": "List projects registered by the authenticated user", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{}}},
 		{"name": "register_project", "description": "Register a code repository for design work", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"name": str, "repository_url": str, "metadata": map[string]any{"type": "object"}}, "required": []string{"name", "repository_url"}}},
-		{"name": "create_design_session", "description": "Start a design review session for a registered project", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"project_id": str, "title": str}, "required": []string{"project_id", "title"}}},
+		{"name": "create_design_session", "description": "Start a design review session and attach inspected component, token, screenshot, or preview context", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"project_id": str, "title": str, "context": map[string]any{"type": "object"}}, "required": []string{"project_id", "title"}}},
+		{"name": "read_design_context", "description": "Read project metadata and the design context attached to a session", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"project_id": str, "session_id": str}, "required": []string{"project_id"}}},
 		{"name": "submit_proposal", "description": "Submit a design direction or a new revision for review", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"session_id": str, "title": str, "description": str, "preview_url": str, "screenshot": str, "revision_of": str}, "required": []string{"session_id", "title"}}},
 		{"name": "read_reviews", "description": "Read feedback and decisions for a proposal", "inputSchema": map[string]any{"type": "object", "properties": map[string]any{"proposal_id": str}, "required": []string{"proposal_id"}}},
 	}
@@ -295,12 +296,32 @@ func callDesignMCPTool(app core.App, owner, name string, args map[string]any) (a
 		}
 		_, err := app.DB().NewQuery("INSERT INTO design_projects (id,owner,name,repository_url,metadata,created,updated) VALUES ({:id},{:owner},{:name},{:url},{:metadata},{:now},{:now})").Bind(map[string]any{"id": projectID, "owner": owner, "name": arg("name"), "url": arg("repository_url"), "metadata": string(metadata), "now": now}).Execute()
 		return map[string]string{"id": projectID}, err
+	case "read_design_context":
+		var projects []map[string]any
+		err := app.DB().NewQuery("SELECT p.id,p.name,p.repository_url,p.metadata FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"project": arg("project_id"), "owner": owner}).All(&projects)
+		if err != nil || len(projects) == 0 {
+			return nil, fmt.Errorf("project not found or access denied")
+		}
+		result := map[string]any{"project": projects[0]}
+		if sessionID := arg("session_id"); sessionID != "" {
+			var sessions []map[string]any
+			err = app.DB().NewQuery("SELECT s.id,s.title,s.context,s.status FROM design_sessions s JOIN design_projects p ON p.id=s.project LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE s.id={:session} AND p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"session": sessionID, "project": arg("project_id"), "owner": owner}).All(&sessions)
+			if err != nil || len(sessions) == 0 {
+				return nil, fmt.Errorf("session not found or access denied")
+			}
+			result["session"] = sessions[0]
+		}
+		return result, nil
 	case "create_design_session":
 		if arg("title") == "" {
 			return nil, fmt.Errorf("title is required")
 		}
 		sessionID := id()
-		_, err := app.DB().NewQuery("INSERT INTO design_sessions (id,project,owner,title,status,created,updated) SELECT {:id},p.id,{:owner},{:title},'draft',{:now},{:now} FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE p.id={:project} AND (p.owner={:owner} OR m.role='editor')").Bind(map[string]any{"id": sessionID, "owner": owner, "title": arg("title"), "now": now, "project": arg("project_id")}).Execute()
+		context, _ := json.Marshal(args["context"])
+		if len(context) == 0 {
+			context = []byte("{}")
+		}
+		_, err := app.DB().NewQuery("INSERT INTO design_sessions (id,project,owner,title,status,context,created,updated) SELECT {:id},p.id,{:owner},{:title},'draft',{:context},{:now},{:now} FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE p.id={:project} AND (p.owner={:owner} OR m.role='editor')").Bind(map[string]any{"id": sessionID, "owner": owner, "title": arg("title"), "context": string(context), "now": now, "project": arg("project_id")}).Execute()
 		if err != nil {
 			return nil, err
 		}

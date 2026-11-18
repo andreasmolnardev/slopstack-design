@@ -33,7 +33,7 @@ Persistent application data is stored in the `design-data` volume. Back it up wh
 
 ## Agent workflow
 
-Connect an MCP client to `/mcp` using a PocketBase user bearer token. The endpoint accepts stateless JSON-RPC over HTTP. Implemented methods are `initialize`, `ping`, `tools/list`, and `tools/call`; tools include `list_projects`, `register_project`, `create_design_session`, `submit_proposal`, and `read_reviews`. Human review actions are recorded by the authenticated web API and appear in `read_reviews`. Upload screenshots as multipart field `file` to `/api/design/sessions/{sessionId}/previews`, then submit its returned URL as `screenshot` on `submit_proposal`. External preview URLs can be submitted as `preview_url`.
+Connect an MCP client to `/mcp` using a PocketBase user bearer token. The endpoint accepts stateless JSON-RPC over HTTP. Implemented methods are `initialize`, `ping`, `tools/list`, and `tools/call`; tools include `list_projects`, `register_project`, `create_design_session`, `read_design_context`, `submit_proposal`, and `read_reviews`. Human review actions are recorded by the authenticated web API and appear in `read_reviews`. Upload screenshots as multipart field `file` to `/api/design/sessions/{sessionId}/previews`, then submit its returned URL as `screenshot` on `submit_proposal`. External preview URLs can be submitted as `preview_url`.
 
 The web UI can be opened on a review session with `/?session={sessionId}`. It lists proposals, records approval or requested changes, and exposes session creation. An approval records intent only; an agent must make and report repository changes separately.
 
