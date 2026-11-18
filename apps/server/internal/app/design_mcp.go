@@ -30,7 +30,7 @@ func designID() string {
 // middleware validates the bearer token before this handler runs.
 func RegisterDesignMCPRoute(e *core.ServeEvent) {
 	e.Router.POST("/mcp", func(event *core.RequestEvent) error {
-		if event.Auth == nil || event.Auth.Collection().Name != "_superusers" {
+		if event.Auth == nil || event.Auth.Collection().Name != "users" {
 			return event.UnauthorizedError("valid PocketBase user token required", nil)
 		}
 		var request struct {
@@ -65,7 +65,7 @@ func RegisterDesignMCPRoute(e *core.ServeEvent) {
 			response["error"] = map[string]any{"code": -32601, "message": "method not found"}
 		}
 		return event.JSON(http.StatusOK, response)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 }
 
 // RegisterDesignReviewRoutes adds the human review actions used by the web UI.
@@ -79,7 +79,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not load projects", err)
 		}
 		return event.JSON(http.StatusOK, rows)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.POST("/api/design/projects", func(event *core.RequestEvent) error {
 		var input struct {
 			Name          string         `json:"name"`
@@ -104,7 +104,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not create project", err)
 		}
 		return event.JSON(http.StatusCreated, map[string]string{"id": id})
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/projects/{id}/sessions", func(event *core.RequestEvent) error {
 		var rows []map[string]any
 		err := event.App.DB().NewQuery("SELECT id,project,title,status,context,created,updated FROM design_sessions WHERE project={:project} AND owner={:owner} ORDER BY updated DESC").Bind(map[string]any{"project": event.Request.PathValue("id"), "owner": event.Auth.Id}).All(&rows)
@@ -112,7 +112,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not load sessions", err)
 		}
 		return event.JSON(http.StatusOK, rows)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.POST("/api/design/projects/{id}/sessions", func(event *core.RequestEvent) error {
 		var input struct {
 			Title   string         `json:"title"`
@@ -140,7 +140,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.NotFoundError("project not found", nil)
 		}
 		return event.JSON(http.StatusCreated, map[string]string{"id": id})
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/proposals/{id}/reviews", func(event *core.RequestEvent) error {
 		var rows []map[string]any
 		err := event.App.DB().NewQuery("SELECT r.id,r.decision,r.feedback,r.created FROM design_reviews r JOIN design_proposals p ON p.id=r.proposal WHERE p.id={:proposal} AND p.owner={:owner} ORDER BY r.created").Bind(map[string]any{"proposal": event.Request.PathValue("id"), "owner": event.Auth.Id}).All(&rows)
@@ -148,7 +148,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not load history", err)
 		}
 		return event.JSON(http.StatusOK, rows)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.POST("/api/design/sessions/{id}/previews", func(event *core.RequestEvent) error {
 		event.Request.Body = http.MaxBytesReader(event.Response, event.Request.Body, 16<<20)
 		if err := event.Request.ParseMultipartForm(16 << 20); err != nil {
@@ -189,7 +189,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not store screenshot", err)
 		}
 		return event.JSON(http.StatusCreated, map[string]string{"url": "/api/design/previews/" + name})
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/previews/{name}", func(event *core.RequestEvent) error {
 		name := event.Request.PathValue("name")
 		if len(name) < 20 || strings.ContainsAny(name, "/\\") {
@@ -201,9 +201,9 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.NotFoundError("preview not found", err)
 		}
 		return event.FileFS(os.DirFS(filepath.Join(event.App.DataDir(), "design_uploads")), name)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/sessions/{id}/proposals", func(event *core.RequestEvent) error {
-		if event.Auth == nil || event.Auth.Collection().Name != "_superusers" {
+		if event.Auth == nil || event.Auth.Collection().Name != "users" {
 			return event.UnauthorizedError("sign in required", nil)
 		}
 		var rows []map[string]any
@@ -212,9 +212,9 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not load proposals", err)
 		}
 		return event.JSON(http.StatusOK, rows)
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 	e.Router.POST("/api/design/proposals/{id}/reviews", func(event *core.RequestEvent) error {
-		if event.Auth == nil || event.Auth.Collection().Name != "_superusers" {
+		if event.Auth == nil || event.Auth.Collection().Name != "users" {
 			return event.UnauthorizedError("sign in required", nil)
 		}
 		var input struct {
@@ -237,7 +237,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.InternalServerError("could not save review", err)
 		}
 		return event.JSON(http.StatusCreated, map[string]string{"status": input.Decision})
-	}).Bind(apis.RequireAuth("_superusers"))
+	}).Bind(apis.RequireAuth("users"))
 }
 
 func designMCPTools() []map[string]any {
