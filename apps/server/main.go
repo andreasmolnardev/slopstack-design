@@ -21,13 +21,23 @@ func main() {
 		addr = "0.0.0.0:8090"
 	}
 	pb := pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: dataDir})
+	if flag := pb.RootCmd.PersistentFlags().Lookup("http"); flag != nil {
+		_ = pb.RootCmd.PersistentFlags().Set("http", addr)
+	}
 	pb.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		app.RegisterDesignMCPRoute(e)
 		app.RegisterDesignReviewRoutes(e)
 		static := filepath.Join("public")
 		if _, err := os.Stat(static); err == nil {
 			e.Router.GET("/{path...}", func(event *core.RequestEvent) error {
-				return event.FileFS(os.DirFS(static), event.Request.PathValue("path"))
+				name := event.Request.PathValue("path")
+				if name == "" {
+					name = "index.html"
+				}
+				if _, err := os.Stat(filepath.Join(static, filepath.Clean(name))); err != nil {
+					name = "index.html"
+				}
+				return event.FileFS(os.DirFS(static), name)
 			})
 		}
 		return e.Next()

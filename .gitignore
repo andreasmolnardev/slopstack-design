@@ -1,0 +1,6 @@
+.cache/
+node_modules/
+apps/*/node_modules/
+apps/server/pb_data/
+apps/server/slopstack-design
+dist/
