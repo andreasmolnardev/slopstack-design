@@ -19,7 +19,7 @@ pnpm dev
 
 The server listens on `:8090` by default; the web client runs on Vite's local port. PocketBase admin UI is available at `/_/`. Set `SLOPSTACK_DESIGN_DATA` to choose the persistent data directory and `SLOPSTACK_DESIGN_ADDR` to change the listen address.
 
-Create user accounts from the PocketBase admin UI. The web app signs in with a PocketBase user account; its token is kept in browser local storage. Projects and all associated records are scoped to that account.
+Create user accounts from the PocketBase admin UI. The web app signs in with a PocketBase user account; its token is kept in browser local storage. Project owners can add existing accounts as reviewers or editors. Reviewers can read proposals and submit decisions; editors can also create sessions and submit proposals. Records are scoped to the owner or project membership.
 
 ## Self-host
 
