@@ -13,9 +13,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+func designQueryMaps(query *dbx.Query) ([]map[string]any, error) {
+	var scanned []dbx.NullStringMap
+	if err := query.All(&scanned); err != nil {
+		return nil, err
+	}
+	result := make([]map[string]any, 0, len(scanned))
+	for _, row := range scanned {
+		values := make(map[string]any, len(row))
+		for key, value := range row {
+			if value.Valid {
+				values[key] = value.String
+			} else {
+				values[key] = nil
+			}
+		}
+		result = append(result, values)
+	}
+	return result, nil
+}
 
 func designID() string {
 	var bytes [16]byte
@@ -73,8 +94,7 @@ func RegisterDesignMCPRoute(e *core.ServeEvent) {
 // checked through the project/session chain before a decision is recorded.
 func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 	e.Router.GET("/api/design/projects", func(event *core.RequestEvent) error {
-		var rows []map[string]any
-		err := event.App.DB().NewQuery("SELECT DISTINCT p.id,p.name,p.repository_url,p.metadata,p.created,p.updated FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id WHERE p.owner={:owner} OR m.user={:owner} ORDER BY p.name").Bind(map[string]any{"owner": event.Auth.Id}).All(&rows)
+		rows, err := designQueryMaps(event.App.DB().NewQuery("SELECT DISTINCT p.id,p.name,p.repository_url,p.metadata,p.created,p.updated FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id WHERE p.owner={:owner} OR m.user={:owner} ORDER BY p.name").Bind(map[string]any{"owner": event.Auth.Id}))
 		if err != nil {
 			return event.InternalServerError("could not load projects", err)
 		}
@@ -133,8 +153,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 		return event.JSON(http.StatusCreated, map[string]string{"id": id})
 	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/projects/{id}/sessions", func(event *core.RequestEvent) error {
-		var rows []map[string]any
-		err := event.App.DB().NewQuery("SELECT s.id,s.project,s.title,s.status,s.context,s.created,s.updated FROM design_sessions s LEFT JOIN design_project_members m ON m.project=s.project WHERE s.project={:project} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY s.updated DESC").Bind(map[string]any{"project": event.Request.PathValue("id"), "owner": event.Auth.Id}).All(&rows)
+		rows, err := designQueryMaps(event.App.DB().NewQuery("SELECT s.id,s.project,s.title,s.status,s.context,s.created,s.updated FROM design_sessions s LEFT JOIN design_project_members m ON m.project=s.project WHERE s.project={:project} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY s.updated DESC").Bind(map[string]any{"project": event.Request.PathValue("id"), "owner": event.Auth.Id}))
 		if err != nil {
 			return event.InternalServerError("could not load sessions", err)
 		}
@@ -169,8 +188,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 		return event.JSON(http.StatusCreated, map[string]string{"id": id})
 	}).Bind(apis.RequireAuth("users"))
 	e.Router.GET("/api/design/proposals/{id}/reviews", func(event *core.RequestEvent) error {
-		var rows []map[string]any
-		err := event.App.DB().NewQuery("SELECT r.id,r.decision,r.feedback,r.created FROM design_reviews r JOIN design_proposals p ON p.id=r.proposal JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.id={:proposal} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY r.created").Bind(map[string]any{"proposal": event.Request.PathValue("id"), "owner": event.Auth.Id}).All(&rows)
+		rows, err := designQueryMaps(event.App.DB().NewQuery("SELECT r.id,r.decision,r.feedback,r.created FROM design_reviews r JOIN design_proposals p ON p.id=r.proposal JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.id={:proposal} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY r.created").Bind(map[string]any{"proposal": event.Request.PathValue("id"), "owner": event.Auth.Id}))
 		if err != nil {
 			return event.InternalServerError("could not load history", err)
 		}
@@ -233,8 +251,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 		if event.Auth == nil || event.Auth.Collection().Name != "users" {
 			return event.UnauthorizedError("sign in required", nil)
 		}
-		var rows []map[string]any
-		err := event.App.DB().NewQuery("SELECT p.id,p.title,p.description,p.preview_url,p.screenshot,p.revision,p.revision_of,p.created,p.updated FROM design_proposals p JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.session={:session} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY p.created").Bind(map[string]any{"session": event.Request.PathValue("id"), "owner": event.Auth.Id}).All(&rows)
+		rows, err := designQueryMaps(event.App.DB().NewQuery("SELECT p.id,p.title,p.description,p.preview_url,p.screenshot,p.revision,p.revision_of,p.created,p.updated FROM design_proposals p JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.session={:session} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY p.created").Bind(map[string]any{"session": event.Request.PathValue("id"), "owner": event.Auth.Id}))
 		if err != nil {
 			return event.InternalServerError("could not load proposals", err)
 		}
@@ -285,8 +302,7 @@ func callDesignMCPTool(app core.App, owner, name string, args map[string]any) (a
 	now := time.Now().UTC().Format("2006-01-02 15:04:05.000Z")
 	switch name {
 	case "list_projects":
-		var rows []map[string]any
-		err := app.DB().NewQuery("SELECT DISTINCT p.id,p.name,p.repository_url,p.metadata,p.created,p.updated FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id WHERE p.owner={:owner} OR m.user={:owner} ORDER BY p.name").Bind(map[string]any{"owner": owner}).All(&rows)
+		rows, err := designQueryMaps(app.DB().NewQuery("SELECT DISTINCT p.id,p.name,p.repository_url,p.metadata,p.created,p.updated FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id WHERE p.owner={:owner} OR m.user={:owner} ORDER BY p.name").Bind(map[string]any{"owner": owner}))
 		return rows, err
 	case "register_project":
 		projectID := id()
@@ -297,15 +313,14 @@ func callDesignMCPTool(app core.App, owner, name string, args map[string]any) (a
 		_, err := app.DB().NewQuery("INSERT INTO design_projects (id,owner,name,repository_url,metadata,created,updated) VALUES ({:id},{:owner},{:name},{:url},{:metadata},{:now},{:now})").Bind(map[string]any{"id": projectID, "owner": owner, "name": arg("name"), "url": arg("repository_url"), "metadata": string(metadata), "now": now}).Execute()
 		return map[string]string{"id": projectID}, err
 	case "read_design_context":
-		var projects []map[string]any
-		err := app.DB().NewQuery("SELECT p.id,p.name,p.repository_url,p.metadata FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"project": arg("project_id"), "owner": owner}).All(&projects)
+		projects, err := designQueryMaps(app.DB().NewQuery("SELECT p.id,p.name,p.repository_url,p.metadata FROM design_projects p LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"project": arg("project_id"), "owner": owner}))
 		if err != nil || len(projects) == 0 {
 			return nil, fmt.Errorf("project not found or access denied")
 		}
 		result := map[string]any{"project": projects[0]}
 		if sessionID := arg("session_id"); sessionID != "" {
 			var sessions []map[string]any
-			err = app.DB().NewQuery("SELECT s.id,s.title,s.context,s.status FROM design_sessions s JOIN design_projects p ON p.id=s.project LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE s.id={:session} AND p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"session": sessionID, "project": arg("project_id"), "owner": owner}).All(&sessions)
+			sessions, err = designQueryMaps(app.DB().NewQuery("SELECT s.id,s.title,s.context,s.status FROM design_sessions s JOIN design_projects p ON p.id=s.project LEFT JOIN design_project_members m ON m.project=p.id AND m.user={:owner} WHERE s.id={:session} AND p.id={:project} AND (p.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"session": sessionID, "project": arg("project_id"), "owner": owner}))
 			if err != nil || len(sessions) == 0 {
 				return nil, fmt.Errorf("session not found or access denied")
 			}
@@ -354,8 +369,7 @@ func callDesignMCPTool(app core.App, owner, name string, args map[string]any) (a
 		}
 		return map[string]string{"id": proposalID}, nil
 	case "read_reviews":
-		var rows []map[string]any
-		err := app.DB().NewQuery("SELECT r.id,r.decision,r.feedback,r.created FROM design_reviews r JOIN design_proposals p ON p.id=r.proposal JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.id={:proposal} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY r.created").Bind(map[string]any{"proposal": arg("proposal_id"), "owner": owner}).All(&rows)
+		rows, err := designQueryMaps(app.DB().NewQuery("SELECT r.id,r.decision,r.feedback,r.created FROM design_reviews r JOIN design_proposals p ON p.id=r.proposal JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE p.id={:proposal} AND (s.owner={:owner} OR m.user={:owner}) ORDER BY r.created").Bind(map[string]any{"proposal": arg("proposal_id"), "owner": owner}))
 		return rows, err
 	default:
 		return nil, fmt.Errorf("unknown tool %q", name)
