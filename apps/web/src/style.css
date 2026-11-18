@@ -7,3 +7,4 @@
 .proposal-image{width:100%;height:100%;object-fit:contain;border-radius:6px}.image-fallback{display:grid;place-items:center;height:100%;font-size:13px;color:#686b65}
 .decision-feedback{width:100%;min-height:54px;resize:vertical;border:1px solid #e0e1dc;border-radius:6px;padding:10px 12px;font:inherit;font-size:13px;margin:16px 0 0}.history-text span{max-width:560px}.history-row{align-items:start}
 .decision-feedback{width:100%;min-height:54px;resize:vertical;border:1px solid #e0e1dc;border-radius:6px;padding:10px 12px;font:inherit;font-size:13px;margin:16px 0 0}.history-text span{max-width:560px}.history-row{align-items:start}
+.preview-link{height:100%;display:flex;align-items:center;justify-content:center;gap:8px;color:#2f6f63;font-weight:600;font-size:14px}

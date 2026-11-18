@@ -204,9 +204,23 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.BadRequestError("a screenshot file is required", err)
 		}
 		defer file.Close()
+		if header.Size > 16<<20 {
+			return event.BadRequestError("screenshot must be under 16 MB", nil)
+		}
 		mediaType := header.Header.Get("Content-Type")
 		if mediaType != "image/png" && mediaType != "image/jpeg" && mediaType != "image/webp" {
 			return event.BadRequestError("screenshot must be PNG, JPEG, or WebP", nil)
+		}
+		probe := make([]byte, 512)
+		n, readErr := file.Read(probe)
+		if readErr != nil && readErr != io.EOF {
+			return event.BadRequestError("could not read screenshot", readErr)
+		}
+		if detected := http.DetectContentType(probe[:n]); detected != mediaType {
+			return event.BadRequestError("screenshot bytes do not match the declared image type", nil)
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return event.BadRequestError("could not read screenshot", err)
 		}
 		var sessionID string
 		err = event.App.DB().NewQuery("SELECT s.id FROM design_sessions s LEFT JOIN design_project_members m ON m.project=s.project WHERE s.id={:id} AND (s.owner={:owner} OR m.user={:owner})").Bind(map[string]any{"id": event.Request.PathValue("id"), "owner": event.Auth.Id}).Row(&sessionID)
@@ -241,7 +255,7 @@ func RegisterDesignReviewRoutes(e *core.ServeEvent) {
 			return event.NotFoundError("preview not found", nil)
 		}
 		var count int
-		err := event.App.DB().NewQuery("SELECT count(*) FROM design_proposals p JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE (s.owner={:owner} OR m.user={:owner}) AND (p.preview_url={:url} OR p.screenshot={:name})").Bind(map[string]any{"owner": event.Auth.Id, "url": "/api/design/previews/" + name, "name": name}).Row(&count)
+		err := event.App.DB().NewQuery("SELECT count(*) FROM design_proposals p JOIN design_sessions s ON s.id=p.session LEFT JOIN design_project_members m ON m.project=s.project WHERE (s.owner={:owner} OR m.user={:owner}) AND (p.preview_url={:url} OR p.screenshot={:url})").Bind(map[string]any{"owner": event.Auth.Id, "url": "/api/design/previews/" + name}).Row(&count)
 		if err != nil || count == 0 {
 			return event.NotFoundError("preview not found", err)
 		}
