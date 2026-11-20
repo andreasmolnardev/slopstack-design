@@ -23,13 +23,22 @@ Create user accounts from the PocketBase admin UI. The web app signs in with a P
 
 ## Self-host
 
-Build and run with Docker Compose:
+For a local development build from the checked-out source:
 
 ```sh
-docker compose up --build
+docker compose -f docker-compose.dev.yaml up --build
 ```
 
-Persistent application data is stored in the `design-data` volume. Back it up while the service is stopped. Configure a reverse proxy with HTTPS before allowing remote access. The first account is created through PocketBase's admin setup flow.
+For a production deployment using the published GHCR image:
+
+```sh
+docker compose -f docker-compose.yaml pull
+docker compose -f docker-compose.yaml up -d
+```
+
+Persistent application data is stored in the `design-data` volume (or `design-data-dev` for the dev compose file). Set `SLOPSTACK_DESIGN_TAG` to select a release; the default is `latest`. For a private GHCR package, authenticate Docker with GitHub before pulling. Back up the volume while the service is stopped. Configure a reverse proxy with HTTPS before allowing remote access. The first account is created through PocketBase's admin setup flow.
+
+The [container workflow](.github/workflows/publish-container.yml) builds pull requests without publishing. Pushes to `main` publish `latest`, branch, and commit tags; version tags such as `v1.2.3` publish versioned images. The workflow builds `linux/amd64` and `linux/arm64` images.
 
 ## Agent workflow
 

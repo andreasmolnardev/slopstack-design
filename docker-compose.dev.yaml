@@ -1,14 +1,17 @@
 services:
   design:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: slopstack-design:dev
     ports:
       - "${SLOPSTACK_DESIGN_PORT:-8090}:8090"
     environment:
       SLOPSTACK_DESIGN_ADDR: :8090
       SLOPSTACK_DESIGN_DATA: /data
     volumes:
-      - design-data:/data
+      - design-data-dev:/data
     restart: unless-stopped
 
 volumes:
-  design-data:
+  design-data-dev:

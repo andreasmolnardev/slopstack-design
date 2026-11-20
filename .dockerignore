@@ -1,6 +1,8 @@
 .git
+.cache
 node_modules
 apps/web/node_modules
 apps/web/dist
+apps/web/tsconfig.tsbuildinfo
 apps/server/pb_data
 *.log

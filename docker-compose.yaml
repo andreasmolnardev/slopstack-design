@@ -1,0 +1,14 @@
+services:
+  design:
+    image: ${SLOPSTACK_DESIGN_IMAGE:-ghcr.io/andreasmolnardev/slopstack-design}:${SLOPSTACK_DESIGN_TAG:-latest}
+    ports:
+      - "${SLOPSTACK_DESIGN_PORT:-8090}:8090"
+    environment:
+      SLOPSTACK_DESIGN_ADDR: :8090
+      SLOPSTACK_DESIGN_DATA: /data
+    volumes:
+      - design-data:/data
+    restart: unless-stopped
+
+volumes:
+  design-data:
